@@ -1,3 +1,5 @@
 config.py
-./data/
-./results/
+data/*
+results/*
+.idea/
+__pycache__/
