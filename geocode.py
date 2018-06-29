@@ -1,13 +1,12 @@
 from geopy.geocoders import GoogleV3
 import pandas as pd
+import config as cfg
 
-API_KEY = "AIzaSyAKCNAFKTpl3RqFBI2Qe799ZVdeyVUFbd8"
+API_KEY = cfg.API_KEY
 
 data = pd.read_excel("./data/libraries.xls")
 
 geolocator = GoogleV3(api_key=API_KEY)
-
-#location = geolocator.geocode("19 Cefn Parc Tredegar NP223PH Wales")
 
 subset = data.head(10)
 
@@ -15,7 +14,7 @@ lat = []
 lon = []
 missing = 0
 
-for _, row in subset.iterrows():
+for _, row in data.iterrows():
     address = "{}, {}, {}, {}".format(row["TITLE"], row["STREET_ADDRESS"], row["TOWN"], row["POSTCODE"])
     location = geolocator.geocode(address)
 
@@ -24,12 +23,12 @@ for _, row in subset.iterrows():
         missing += 1
 
     else:
-        lon.append(location.longitude)
         lat.append(location.latitude)
+        lon.append(location.longitude)
 
 print("Number of missing addresses: {}".format(missing))
 
-subset["LON"] = lon
-subset["LAT"] = lat
+data["LAT"] = lat
+data["LON"] = lon
 
-subset.to_csv("test.csv")
+data.to_csv("./results/geo_libraries.csv")
