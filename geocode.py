@@ -24,6 +24,7 @@ def geolocate(data):
     # TODO Get the whole location raw dump and save that elsewhere? Just in case we want to investigate anything else
     for _, row in data.iterrows():
         count += 1
+        # TODO Write another script to create an ADDRESS column, use this as the standard then for this line
         address = "{}, {}, {}, {}".format(row["TITLE"], row["STREET_ADDRESS"], row["TOWN"], row["POSTCODE"])
         location = geolocator.geocode(address)
 
