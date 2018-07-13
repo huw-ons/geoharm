@@ -1,13 +1,16 @@
-from geopy.geocoders import GoogleV3
+import sys
 import pandas as pd
 import config as cfg
-import sys
+from geopy.geocoders import GoogleV3
+from unifier import unify
+
 
 # API key stored off repo for security purposes (although it's not that dangerous)
 API_KEY = cfg.API_KEY
 
-def geolocate(data):
-    # Setting up the geolocator to connect to Google's Geocoding API, biasing results to the UK by specifying the domain,
+
+def geolocate(data, column):
+    # Setting up the geolocator to connect to Google's Geocoding API, biasing results to the UK by specifying the domain
     # timeout is to stop there being too many requests a second and making things difficult.
 
     print("Beginning geolocator")
@@ -16,7 +19,8 @@ def geolocate(data):
 
     lat = []
     lon = []
-    missing = 0
+    missing = []
+    missing_count = 0
     count = 0
 
     # Loop grabs each library, extracts the useful address data and passes this to the Google API to return location data
@@ -24,27 +28,32 @@ def geolocate(data):
     # TODO Get the whole location raw dump and save that elsewhere? Just in case we want to investigate anything else
     for _, row in data.iterrows():
         count += 1
-        # TODO Write another script to create an ADDRESS column, use this as the standard then for this line
-        address = "{}, {}, {}, {}".format(row["TITLE"], row["STREET_ADDRESS"], row["TOWN"], row["POSTCODE"])
+        address = "{}".format(row[column])
         location = geolocator.geocode(address)
 
         if location is None:
             print("Cannot find location for {}".format(address))
-            missing += 1
+
+            lat.append(None)
+            lon.append(None)
+
+            missing.append(address)
+            missing_count += 1
 
         else:
+            # TODO Do a better job of catching addresses outside the UK
             lat.append(location.latitude)
             lon.append(location.longitude)
 
         if (count % 25) == 0:
             print("Addresses processed: {}".format(count))
 
-    print("Number of missing addresses: {}".format(missing))
+    print("Number of missing addresses: {}".format(missing_count))
 
     data["LAT"] = lat
     data["LON"] = lon
 
-    return data
+    return data, missing
 
 
 if __name__ == "__main__":
@@ -52,6 +61,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Filename (including extension) that contains geocodes")
     parser.add_argument("output", help="Filename (including extension) that output is written to")
+    parser.add_argument("column", help="Name of column where the address exists")
+    parser.add_argument("--columns", help="File containing columns that you want to merge into one", required=False)
 
     args = parser.parse_args()
 
@@ -64,8 +75,17 @@ if __name__ == "__main__":
     else:
         sys.exit("Cannot determine the filetype of input, is it .csv, .xls or .xlsx?")
 
-    output = geolocate(data)
+    if args.columns:
+        with open("./data/{}.txt".format(args.columns), "r") as myfile:
+            columns = [line.split(", ") for line in myfile.readlines()][0]
+
+        data = unify(data, columns)
+
+    output, missing = geolocate(data, args.column)
 
     output.to_csv("./results/{}".format(args.output))
+
+    with open('./results/{}_missing'.format(args.output), mode='wt', encoding='utf-8') as myfile:
+        myfile.write('\n'.join(missing))
 
     print("Geolocating finished. Output saved to ./results/{}".format(args.output))
