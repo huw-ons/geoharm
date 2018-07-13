@@ -1,17 +1,22 @@
 import sys
 import folium
+import numpy as np
 import pandas as pd
 from folium.plugins import MarkerCluster
 
 
 def create_map(data, output, name):
+    print("Beginning mapping...")
+
     map_osm = folium.Map()
 
     marker_cluster = MarkerCluster().add_to(map_osm)
 
     for _, row in data.iterrows():
-        popup = folium.Popup(name, parse_html=True)
-        folium.Marker([row["LAT"], row["LON"]], popup=popup).add_to(marker_cluster)
+        # Filters out any addresses that coordinates could not be obtained for
+        if not np.isnan(row["LAT"]) and not np.isnan(row["LON"]):
+            popup = folium.Popup(row[name], parse_html=True)
+            folium.Marker([row["LAT"], row["LON"]], popup=popup).add_to(marker_cluster)
 
     map_osm.save("./maps/{}.html".format(output))
 
@@ -27,7 +32,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if ".csv" in args.input:
-        data = pd.read_csv("./data/{}".format(args.input))
+        data = pd.read_csv("./results/{}".format(args.input))
 
     else:
         sys.exit("Cannot determine the filetype of input, is it a .csv?")
