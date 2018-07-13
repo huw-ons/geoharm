@@ -59,7 +59,7 @@ def geolocate(data, column):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Filename (including extension) that contains geocodes")
+    parser.add_argument("input", help="Filename (including extension) that contains addresses")
     parser.add_argument("output", help="Filename (including extension) that output is written to")
     parser.add_argument("column", help="Name of column where the address exists")
     parser.add_argument("--columns", help="File containing columns that you want to merge into one", required=False)

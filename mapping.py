@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Filename (including extension, must be csv) that has coordinates")
     parser.add_argument("output", help="Filename (not including extension) for output file")
-    parser.add_argument("name", help="Column name of address if want to include as a popup")
+    parser.add_argument("--name", help="Column name of address if want to include as a popup", required=False)
 
     args = parser.parse_args()
 
