@@ -1,8 +1,8 @@
 config.py
-data/*.csv
-data/*.xls
-data/*.ods
-results/*
-.idea/*
-__pycache__/
-maps/*
+/results/*
+/.idea/*
+/__pycache__/
+/maps/*
+/data/*.csv
+/data/*.xls
+/data/*.ods
