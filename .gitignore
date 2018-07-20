@@ -4,5 +4,6 @@ config.py
 /__pycache__/
 /maps/*
 /data/*.csv
+/data/*.CSV
 /data/*.xls
 /data/*.ods
