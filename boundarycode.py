@@ -6,18 +6,21 @@ from shapely.geometry import Point
 
 
 def prepare_dataset(data):
+    # Converts Lon and Lat columns into geometry Point objects for geopandas
     geometry = [Point(xy) for xy in zip(data.LON, data.LAT)]
 
-    crs = {"init": "epsg:3857"}
+    # This is the CRS that seems to best fit as found by QGIS
+    crs = {"init": "epsg:4326"}
     geo_data = gpd.GeoDataFrame(data, crs=crs, geometry=geometry)
 
-    geo_data["geometry"] = geo_data["geometry"].to_crs({"init": "epsg:3857"})
+    geo_data["geometry"] = geo_data["geometry"].to_crs({"init": "epsg:4326"})
 
     return geo_data
 
 
 def prepare_boundaries(boundaries, geo_data):
-    #boundaries.crs = geo_data.crs
+    boundaries.crs = geo_data.crs
+    # Trying to put the boundaries into a compatible CRS with the datasets
     boundaries.crs = {"init": "epsg:3857"}
     boundaries["geometry"] = boundaries["geometry"].to_crs({"init": "epsg:3857"})
 
@@ -25,7 +28,7 @@ def prepare_boundaries(boundaries, geo_data):
 
 
 def geomerge(geo_data, boundaries):
-    boundary_data = gpd.sjoin(geo_data, boundaries, op="within", how="inner")
+    boundary_data = gpd.sjoin(geo_data, boundaries, op="intersects", how="left")
 
     return boundary_data
 
@@ -40,6 +43,7 @@ def produce_map(geo_data, boundaries, output_name):
 
 
 def produce_empty(geo_data, boundaries, boundary_data, output_name):
+    # TODO Fix this up as it isn't catching empty boundaries
     missing = boundary_data[boundary_data.isnull()].index
 
     if len(missing) > 0:
@@ -65,8 +69,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        data = pd.read_csv("./results/{}.csv".format(args.data_input))
-        data = data[data["LAT"].notnull()]
+        data = pd.read_csv("./results/{}.csv".format(args.data_input)).dropna(subset=["LAT", "LON"])
     except FileNotFoundError:
         sys.exit("Cannot find data file, exiting")
 
