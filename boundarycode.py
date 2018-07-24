@@ -13,22 +13,24 @@ def prepare_dataset(data):
     crs = {"init": "epsg:4326"}
     geo_data = gpd.GeoDataFrame(data, crs=crs, geometry=geometry)
 
-    geo_data["geometry"] = geo_data["geometry"].to_crs({"init": "epsg:4326"})
-
     return geo_data
 
 
-def prepare_boundaries(boundaries, geo_data):
-    boundaries.crs = geo_data.crs
-    # Trying to put the boundaries into a compatible CRS with the datasets
-    boundaries.crs = {"init": "epsg:3857"}
-    boundaries["geometry"] = boundaries["geometry"].to_crs({"init": "epsg:3857"})
+def prepare_boundaries(boundaries):
+    boundaries = boundaries.to_crs({"init": "epsg:4326"})
 
     return boundaries
 
 
 def geomerge(geo_data, boundaries):
-    boundary_data = gpd.sjoin(geo_data, boundaries, op="intersects", how="left")
+    boundary_data = gpd.sjoin(geo_data, boundaries, op="intersects", how="right")
+
+    #This cleans away any unpopulated boundaries from the dataset
+    print(boundary_data[boundary_data["ADDRESS"].isna()])
+    boundary_data = boundary_data.dropna(subset=["ADDRESS"])
+    print(len(geo_data))
+    print(len(boundaries))
+    print(len(boundary_data))
 
     return boundary_data
 
@@ -44,18 +46,23 @@ def produce_map(geo_data, boundaries, output_name):
 
 def produce_empty(geo_data, boundaries, boundary_data, output_name):
     # TODO Fix this up as it isn't catching empty boundaries
-    missing = boundary_data[boundary_data.isnull()].index
+    missing = boundary_data[boundary_data["geo_code"].isnull()]
+
+    print(missing)
 
     if len(missing) > 0:
+        print("There is {} addresses without a geo code!".format(len(missing)))
+        print(missing)
+
         fig, ax = plt.subplots(figsize=(15,15))
         ax.set_aspect("equal")
 
         geo_data.plot(ax=ax, markersize=1.5, color="red")
-        boundaries[boundaries["geo_code"].isin(missing)].plot(ax=ax, color="blue", edgecolor="black")
+        boundary_data[boundary_data["ADDRESS"].isin(missing["ADDRESS"])].plot(ax=ax, color="blue", edgecolor="black")
         plt.savefig("./maps/{}_missing.png".format(output_name))
 
     else:
-        print("No boundaries that are empty, happy days! Not writting empty map file")
+        print("No boundaries that are empty, happy days! Not writing empty map file")
 
 
 if __name__ == "__main__":
@@ -85,7 +92,7 @@ if __name__ == "__main__":
     geo_data = prepare_dataset(data)
     print("Data prepared")
 
-    boundaries = prepare_boundaries(boundaries, geo_data)
+    boundaries = prepare_boundaries(boundaries)
     print("Boundaries prepared")
 
     print("Beginning merge...")
