@@ -12,57 +12,42 @@ def prepare_dataset(data):
     # This is the CRS that seems to best fit as found by QGIS
     crs = {"init": "epsg:4326"}
     geo_data = gpd.GeoDataFrame(data, crs=crs, geometry=geometry)
+    geo_data = geo_data.to_crs({"init": "epsg:3857"})
 
     return geo_data
 
 
 def prepare_boundaries(boundaries):
-    boundaries = boundaries.to_crs({"init": "epsg:4326"})
+    boundaries = boundaries.to_crs({"init": "epsg:3857"})
 
     return boundaries
 
 
 def geomerge(geo_data, boundaries):
-    boundary_data = gpd.sjoin(geo_data, boundaries, op="intersects", how="right")
+    boundary_data = gpd.sjoin(geo_data, boundaries, op="contains", how="right")
 
-    #This cleans away any unpopulated boundaries from the dataset
-    print(boundary_data[boundary_data["ADDRESS"].isna()])
     boundary_data = boundary_data.dropna(subset=["ADDRESS"])
-    print(len(geo_data))
-    print(len(boundaries))
-    print(len(boundary_data))
 
     return boundary_data
 
 
-def produce_map(geo_data, boundaries, output_name):
+def produce_map(geo_data, boundary_data, output_name):
     fig, ax = plt.subplots(figsize=(20,20))
     ax.set_aspect("equal")
 
-    geo_data.plot(ax=ax, markersize=50, color="red")
-    boundaries.plot(ax=ax, color="none", edgecolor="black")
+    boundary_data.plot(ax=ax, color="none", edgecolor="black")
+    geo_data[geo_data["ADDRESS"].isin(boundary_data["ADDRESS"])].plot(ax=ax, markersize=1, color="red")
     plt.savefig("./maps/{}.png".format(output_name))
 
 
 def produce_empty(geo_data, boundaries, boundary_data, output_name):
-    # TODO Fix this up as it isn't catching empty boundaries
-    missing = boundary_data[boundary_data["geo_code"].isnull()]
+    fig, ax = plt.subplots(figsize=(15, 15))
+    ax.set_aspect("equal")
 
-    print(missing)
-
-    if len(missing) > 0:
-        print("There is {} addresses without a geo code!".format(len(missing)))
-        print(missing)
-
-        fig, ax = plt.subplots(figsize=(15,15))
-        ax.set_aspect("equal")
-
-        geo_data.plot(ax=ax, markersize=1.5, color="red")
-        boundary_data[boundary_data["ADDRESS"].isin(missing["ADDRESS"])].plot(ax=ax, color="blue", edgecolor="black")
-        plt.savefig("./maps/{}_missing.png".format(output_name))
-
-    else:
-        print("No boundaries that are empty, happy days! Not writing empty map file")
+    boundary_data.plot(ax=ax, color="none", edgecolor="black")
+    boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])].plot(ax=ax, color="blue", edgecolor="black")
+    geo_data[geo_data["ADDRESS"].isin(boundary_data["ADDRESS"])].plot(ax=ax, markersize=1, color="red")
+    plt.savefig("./maps/{}_missing.png".format(output_name))
 
 
 if __name__ == "__main__":
@@ -101,7 +86,7 @@ if __name__ == "__main__":
 
     if args.map_output is not None:
         print("Outputting maps")
-        produce_map(geo_data, boundaries, args.map_output)
+        produce_map(geo_data, boundary_data, args.map_output)
         produce_empty(geo_data, boundaries, boundary_data, args.map_output)
 
     print("Writing merged dataset to file...")
