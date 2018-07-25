@@ -24,11 +24,20 @@ def prepare_boundaries(boundaries):
 
 
 def geomerge(geo_data, boundaries):
-    boundary_data = gpd.sjoin(geo_data, boundaries, op="contains", how="right")
-
-    boundary_data = boundary_data.dropna(subset=["ADDRESS"])
+    boundary_data = gpd.sjoin(geo_data, boundaries, op="within", how="right")
 
     return boundary_data
+
+
+def remove_missing(geo_data, boundary_data, boundaries):
+    boundary_data = boundary_data.dropna(subset=["ADDRESS"])
+    geo_data = geo_data[geo_data["ADDRESS"].isin(boundary_data["ADDRESS"])]
+    missing_boundaries = boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])]
+    filled = len(boundaries) - len(missing_boundaries)
+
+    print("There are {} boundaries with a data point out of {}".format(filled, len(boundaries)))
+
+    return geo_data, boundary_data
 
 
 def produce_map(geo_data, boundary_data, output_name):
@@ -36,7 +45,7 @@ def produce_map(geo_data, boundary_data, output_name):
     ax.set_aspect("equal")
 
     boundary_data.plot(ax=ax, color="none", edgecolor="black")
-    geo_data[geo_data["ADDRESS"].isin(boundary_data["ADDRESS"])].plot(ax=ax, markersize=1, color="red")
+    geo_data.plot(ax=ax, markersize=1, color="red")
     plt.savefig("./maps/{}.png".format(output_name))
 
 
@@ -46,7 +55,7 @@ def produce_empty(geo_data, boundaries, boundary_data, output_name):
 
     boundary_data.plot(ax=ax, color="none", edgecolor="black")
     boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])].plot(ax=ax, color="blue", edgecolor="black")
-    geo_data[geo_data["ADDRESS"].isin(boundary_data["ADDRESS"])].plot(ax=ax, markersize=1, color="red")
+    geo_data.plot(ax=ax, markersize=0.5, color="red")
     plt.savefig("./maps/{}_missing.png".format(output_name))
 
 
@@ -83,6 +92,9 @@ if __name__ == "__main__":
     print("Beginning merge...")
     boundary_data = geomerge(geo_data, boundaries)
     print("Merge completed...")
+
+    print("Cleaning up...")
+    geo_data, boundary_data = remove_missing(geo_data, boundary_data, boundaries)
 
     if args.map_output is not None:
         print("Outputting maps")
