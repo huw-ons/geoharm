@@ -1,3 +1,4 @@
+import os
 import sys
 import pandas as pd
 import geopandas as gpd
@@ -40,23 +41,22 @@ def remove_missing(geo_data, boundary_data, boundaries):
     return geo_data, boundary_data
 
 
-def produce_map(geo_data, boundary_data, output_name):
-    fig, ax = plt.subplots(figsize=(20,20))
-    ax.set_aspect("equal")
-
-    boundary_data.plot(ax=ax, color="none", edgecolor="black")
-    geo_data.plot(ax=ax, markersize=1, color="red")
-    plt.savefig("./maps/{}.png".format(output_name))
-
-
-def produce_empty(geo_data, boundaries, boundary_data, output_name):
+def produce_empty(geo_data, boundaries, boundary_data, boundary_name, output_name):
     fig, ax = plt.subplots(figsize=(15, 15))
     ax.set_aspect("equal")
 
     boundary_data.plot(ax=ax, color="none", edgecolor="black")
     boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])].plot(ax=ax, color="blue", edgecolor="black")
     geo_data.plot(ax=ax, markersize=0.5, color="red")
-    plt.savefig("./maps/{}_missing.png".format(output_name))
+    check_folder("./maps/{}/{}/".format(output_name, boundary_name))
+    plt.savefig("./maps/{}/{}/{}_missing.png".format(output_name, boundary_name, output_name))
+
+
+def check_folder(path):
+    directory = os.path.dirname(path)
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 if __name__ == "__main__":
@@ -64,13 +64,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("data_input", help="Filename (not including extension) that contains coordinates")
     parser.add_argument("boundary_input", help="Filename (not including extension) of Shapefile")
-    parser.add_argument("output", help="Filename (not including extension) to output merged file to")
-    parser.add_argument("--map_output", help="Filename (not including extension) to write maps to", required=False, default=None)
+    parser.add_argument("--map_output", help="Flag to specify whether to write debugging maps", required=False, default="N")
 
     args = parser.parse_args()
+    stripped_input = args.data_input.split("_")[0]
 
     try:
-        data = pd.read_csv("./results/{}.csv".format(args.data_input)).dropna(subset=["LAT", "LON"])
+        data = pd.read_csv("./results/{}/{}_geo.csv".format(stripped_input, stripped_input)).dropna(subset=["LAT", "LON"])
     except FileNotFoundError:
         sys.exit("Cannot find data file, exiting")
 
@@ -96,12 +96,12 @@ if __name__ == "__main__":
     print("Cleaning up...")
     geo_data, boundary_data = remove_missing(geo_data, boundary_data, boundaries)
 
-    if args.map_output is not None:
+    if args.map_output is "Y":
         print("Outputting maps")
-        produce_map(geo_data, boundary_data, args.map_output)
-        produce_empty(geo_data, boundaries, boundary_data, args.map_output)
+        produce_empty(geo_data, boundaries, boundary_data, args.boundary_input, stripped_input)
 
     print("Writing merged dataset to file...")
-    boundary_data.to_csv("./results/{}_boundary.csv".format(args.output))
+    check_folder("./results/{}/{}/".format(stripped_input, args.boundary_input))
+    boundary_data.to_csv("./results/{}/{}/{}_boundaries.csv".format(stripped_input, args.boundary_input, stripped_input))
 
     print("Done.")

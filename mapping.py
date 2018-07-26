@@ -21,25 +21,24 @@ def create_map(data, output, name=None):
             else:
                 folium.Marker([row["LAT"], row["LON"]]).add_to(marker_cluster)
 
-    map_osm.save("./maps/{}.html".format(output))
+    map_osm.save("./maps/{}/{}_map.html".format(output, output))
 
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Filename (including extension, must be csv) that has coordinates")
-    parser.add_argument("output", help="Filename (not including extension) for output file")
+    parser.add_argument("input", help="Filename (not including extension, must be csv) that has coordinates")
     parser.add_argument("--name", help="Column name of address if want to include as a popup", required=False, default=None)
 
     args = parser.parse_args()
+    stripped_input = args.input.split("_")[0]
 
-    if ".csv" in args.input:
-        data = pd.read_csv("./results/{}".format(args.input))
+    try:
+        data = pd.read_csv("./results/{}/{}.csv".format(stripped_input, args.input))
+    except FileNotFoundError:
+        sys.exit("Cannot find data file, exiting")
 
-    else:
-        sys.exit("Cannot determine the filetype of input, is it a .csv?")
+    create_map(data, stripped_input, args.name)
 
-    create_map(data, args.output, args.name)
-
-    print("Mapping finished. Output saved to ./maps/{}.html".format(args.output))
+    print("Mapping finished. Output saved to ./maps/{}/".format(stripped_input))
