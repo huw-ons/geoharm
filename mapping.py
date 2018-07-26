@@ -24,6 +24,19 @@ def create_map(data, output, name=None):
     map_osm.save("./maps/{}/{}_map.html".format(output, output))
 
 
+def run(input, name):
+    stripped_input = input.split("_")[0]
+
+    try:
+        data = pd.read_csv("./results/{}/{}.csv".format(stripped_input, input))
+    except FileNotFoundError:
+        sys.exit("Cannot find data file, exiting")
+
+    create_map(data, stripped_input, name)
+
+    print("Mapping finished. Output saved to ./maps/{}/".format(stripped_input))
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -32,13 +45,5 @@ if __name__ == "__main__":
     parser.add_argument("--name", help="Column name of address if want to include as a popup", required=False, default=None)
 
     args = parser.parse_args()
-    stripped_input = args.input.split("_")[0]
 
-    try:
-        data = pd.read_csv("./results/{}/{}.csv".format(stripped_input, args.input))
-    except FileNotFoundError:
-        sys.exit("Cannot find data file, exiting")
-
-    create_map(data, stripped_input, args.name)
-
-    print("Mapping finished. Output saved to ./maps/{}/".format(stripped_input))
+    run(args.input, args.name)

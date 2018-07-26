@@ -56,37 +56,41 @@ def geolocate(data, column):
     return data, missing
 
 
+def run(input, column, columns):
+    if (".xls" in input) or (".xlsx" in input):
+        data = pd.read_excel("./data/{}".format(input))
+
+    elif ".csv" in input:
+        data = pd.read_csv("./data/{}".format(input))
+
+    else:
+        sys.exit("Cannot determine the filetype of input, is it .csv, .xls or .xlsx?")
+
+    if columns is "":
+        with open("./data/{}.txt".format(columns), "r") as myfile:
+            columns = [line.split(", ") for line in myfile.readlines()][0]
+
+        data = unify(data, columns)
+
+    output, missing = geolocate(data, column)
+
+    input = input.split(".")[0]
+
+    output.to_csv("./results/{}/{}_geo.csv".format(input, input))
+
+    with open('./results/{}/{}_missing.txt'.format(input, input), mode='wt', encoding='utf-8') as myfile:
+        myfile.write('\n'.join(missing))
+
+    print("Geolocating finished. Output saved to ./results/{}/".format(input))
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Filename (including extension) that contains addresses")
     parser.add_argument("column", help="Name of column where the address exists")
-    parser.add_argument("--columns", help="File containing columns that you want to merge into one", required=False)
+    parser.add_argument("--columns", help="File containing columns that you want to merge into one", required=False, default="")
 
     args = parser.parse_args()
 
-    if (".xls" in args.input) or (".xlsx" in args.input):
-        data = pd.read_excel("./data/{}".format(args.input))
-
-    elif ".csv" in args.input:
-        data = pd.read_csv("./data/{}".format(args.input))
-
-    else:
-        sys.exit("Cannot determine the filetype of input, is it .csv, .xls or .xlsx?")
-
-    if args.columns:
-        with open("./data/{}.txt".format(args.columns), "r") as myfile:
-            columns = [line.split(", ") for line in myfile.readlines()][0]
-
-        data = unify(data, columns)
-
-    output, missing = geolocate(data, args.column)
-
-    args.input = args.input.split(".")[0]
-
-    output.to_csv("./results/{}/{}_geo.csv".format(args.input, args.input))
-
-    with open('./results/{}/{}_missing.txt'.format(args.input, args.input), mode='wt', encoding='utf-8') as myfile:
-        myfile.write('\n'.join(missing))
-
-    print("Geolocating finished. Output saved to ./results/{}/".format(args.input))
+    run(args.input, args.column, args.columns)

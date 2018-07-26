@@ -59,25 +59,19 @@ def check_folder(path):
         os.makedirs(directory)
 
 
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("data_input", help="Filename (not including extension) that contains coordinates")
-    parser.add_argument("boundary_input", help="Filename (not including extension) of Shapefile")
-    parser.add_argument("--map_output", help="Flag to specify whether to write debugging maps", required=False, default="N")
-
-    args = parser.parse_args()
-    stripped_input = args.data_input.split("_")[0]
+def run(data_input, boundary_input, map_output):
+    stripped_input = data_input.split("_")[0]
 
     try:
-        data = pd.read_csv("./results/{}/{}_geo.csv".format(stripped_input, stripped_input)).dropna(subset=["LAT", "LON"])
+        data = pd.read_csv("./results/{}/{}_geo.csv".format(stripped_input, stripped_input)).dropna(
+            subset=["LAT", "LON"])
     except FileNotFoundError:
         sys.exit("Cannot find data file, exiting")
 
     print("Data file loaded")
 
     try:
-        boundaries = gpd.read_file("./data/boundaries/{}.shp".format(args.boundary_input))
+        boundaries = gpd.read_file("./data/boundaries/{}.shp".format(boundary_input))
     except FileNotFoundError:
         sys.exit("Cannot find boundary file, exiting")
 
@@ -96,12 +90,24 @@ if __name__ == "__main__":
     print("Cleaning up...")
     geo_data, boundary_data = remove_missing(geo_data, boundary_data, boundaries)
 
-    if args.map_output is "Y":
+    if map_output is "Y":
         print("Outputting maps")
-        produce_empty(geo_data, boundaries, boundary_data, args.boundary_input, stripped_input)
+        produce_empty(geo_data, boundaries, boundary_data, boundary_input, stripped_input)
 
     print("Writing merged dataset to file...")
-    check_folder("./results/{}/{}/".format(stripped_input, args.boundary_input))
-    boundary_data.to_csv("./results/{}/{}/{}_boundaries.csv".format(stripped_input, args.boundary_input, stripped_input))
+    check_folder("./results/{}/{}/".format(stripped_input, boundary_input))
+    boundary_data.to_csv("./results/{}/{}/{}_boundaries.csv".format(stripped_input, boundary_input, stripped_input))
 
     print("Done.")
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("data_input", help="Filename (not including extension) that contains coordinates")
+    parser.add_argument("boundary_input", help="Filename (not including extension) of Shapefile")
+    parser.add_argument("--map_output", help="Flag to specify whether to write debugging maps", required=False, default="N")
+
+    args = parser.parse_args()
+
+    run(args.data_input, args.boundary_input, args.map_output)
