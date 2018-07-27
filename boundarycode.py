@@ -19,6 +19,7 @@ def prepare_dataset(data):
 
 
 def prepare_boundaries(boundaries):
+    # Matching the boundary CRS to the data CRS
     boundaries = boundaries.to_crs({"init": "epsg:3857"})
 
     return boundaries
@@ -31,6 +32,7 @@ def geomerge(geo_data, boundaries):
 
 
 def remove_missing(geo_data, boundary_data, boundaries):
+    # Dropping all rows without an address, an indication that there was nothing to merge with
     boundary_data = boundary_data.dropna(subset=["ADDRESS"])
     geo_data = geo_data[geo_data["ADDRESS"].isin(boundary_data["ADDRESS"])]
     missing_boundaries = boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])]
@@ -41,7 +43,7 @@ def remove_missing(geo_data, boundary_data, boundaries):
     return geo_data, boundary_data
 
 
-def produce_empty(geo_data, boundaries, boundary_data, boundary_name, output_name):
+def produce_map(geo_data, boundaries, boundary_data, boundary_name, output_name):
     fig, ax = plt.subplots(figsize=(15, 15))
     ax.set_aspect("equal")
 
@@ -92,7 +94,7 @@ def run(data_input, boundary_input, map_output):
 
     if map_output is "Y":
         print("Outputting maps")
-        produce_empty(geo_data, boundaries, boundary_data, boundary_input, stripped_input)
+        produce_map(geo_data, boundaries, boundary_data, boundary_input, stripped_input)
 
     print("Writing merged dataset to file...")
     check_folder("./results/{}/{}/".format(stripped_input, boundary_input))
