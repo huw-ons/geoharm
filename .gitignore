@@ -5,5 +5,7 @@ config.py
 /maps/*
 /data/*.csv
 /data/*.CSV
+/data/boundaries/
+/data/*.zip
 /data/*.xls
 /data/*.ods
