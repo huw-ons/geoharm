@@ -1,8 +1,12 @@
+import logger
 import geocode
 import mapping
 import boundarycode
 
+
 if __name__ == "__main__":
+    log = logger.get_logger("pipeline.py")
+
     to_run = {
         "libraries": {
             "geocode": {
@@ -106,28 +110,24 @@ if __name__ == "__main__":
     }
 
     for key, value in to_run.items():
-        print("Processing {}...".format(key))
-        print("="*30)
+        log.info("Processing {}...".format(key))
 
         if value["geocode"]["RUN"] is True:
-            print("\nRunning geocoding...")
             geocode.run()
 
         else:
-            print("\nSkipping geocoding...")
+            log.info("Skipping geocoding...")
 
         if value["mapping"]["RUN"] is True:
-            print("\nRunning mapping...")
             mapping.run(value["mapping"]["input"], value["mapping"]["name"])
 
         else:
-            print("\nSkipping mapping...")
+            log.info("Skipping mapping...")
 
         if value["boundarycode"]["RUN"] is True:
-            print("\nRunning boundary coding...")
             boundarycode.run(value["boundarycode"]["data_input"], value["boundarycode"]["boundary_input"], value["boundarycode"]["map_output"])
 
         else:
-            print("\nSkipping boundary coding...")
+            log.info("Skipping boundary coding...")
 
-        print("\nCompleted {}\n".format(key))
+        log.info("Completed {}\n".format(key))

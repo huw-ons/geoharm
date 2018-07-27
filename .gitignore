@@ -9,3 +9,4 @@ config.py
 /data/*.zip
 /data/*.xls
 /data/*.ods
+/logs/
