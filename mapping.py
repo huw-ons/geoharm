@@ -15,7 +15,7 @@ def create_map(data, output, name=None):
     for _, row in data.iterrows():
         # Filters out any addresses that coordinates could not be obtained for
         if not np.isnan(row["LAT"]) and not np.isnan(row["LON"]):
-            if name is not None:
+            if name is not "":
                 popup = folium.Popup(row[name], parse_html=True)
                 folium.Marker([row["LAT"], row["LON"]], popup=popup).add_to(marker_cluster)
             else:

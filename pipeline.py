@@ -43,6 +43,66 @@ if __name__ == "__main__":
                 "map_output": "Y"
             }
         },
+
+        "worship": {
+            "geocode": {
+                "RUN": False,
+                "input": "",
+                "column": "",
+                "columns": ""
+            },
+            "mapping": {
+                "RUN": True,
+                "input": "worship_geo",
+                "name": "ADDRESS"
+            },
+            "boundarycode": {
+                "RUN": True,
+                "data_input": "worship_geo",
+                "boundary_input": "infuse_lsoa_lyr_2011",
+                "map_output": "Y"
+            }
+        },
+
+        "community": {
+            "geocode": {
+                "RUN": False,
+                "input": "",
+                "column": "",
+                "columns": ""
+            },
+            "mapping": {
+                "RUN": True,
+                "input": "community_geo",
+                "name": "ADDRESS"
+            },
+            "boundarycode": {
+                "RUN": True,
+                "data_input": "community_geo",
+                "boundary_input": "infuse_lsoa_lyr_2011",
+                "map_output": "Y"
+            }
+        },
+
+        # "pubs": {
+        #     "geocode": {
+        #         "RUN": False,
+        #         "input": "",
+        #         "column": "",
+        #         "columns": ""
+        #     },
+        #     "mapping": {
+        #         "RUN": True,
+        #         "input": "pubs_geo",
+        #         "name": ""
+        #     },
+        #     "boundarycode": {
+        #         "RUN": True,
+        #         "data_input": "pubs_geo",
+        #         "boundary_input": "infuse_lsoa_lyr_2011",
+        #         "map_output": "Y"
+        #     }
+        # },
     }
 
     for key, value in to_run.items():
