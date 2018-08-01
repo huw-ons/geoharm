@@ -1,5 +1,6 @@
 import os
 import sys
+import logger
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -34,13 +35,12 @@ def geomerge(geo_data, boundaries):
 def remove_missing(geo_data, boundary_data, boundaries):
     # Dropping all rows without an address, an indication that there was nothing to merge with
     boundary_data = boundary_data.dropna(subset=["ADDRESS"])
-    geo_data = geo_data[geo_data["ADDRESS"].isin(boundary_data["ADDRESS"])]
+    geo_data_uk = geo_data[geo_data["ADDRESS"].isin(boundary_data["ADDRESS"])]
+    outside_uk = len(geo_data) - len(geo_data_uk)
     missing_boundaries = boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])]
     filled = len(boundaries) - len(missing_boundaries)
 
-    print("There are {} boundaries with a data point out of {}".format(filled, len(boundaries)))
-
-    return geo_data, boundary_data
+    return geo_data_uk, boundary_data, filled, outside_uk
 
 
 def produce_map(geo_data, boundaries, boundary_data, boundary_name, output_name):
@@ -48,7 +48,12 @@ def produce_map(geo_data, boundaries, boundary_data, boundary_name, output_name)
     ax.set_aspect("equal")
 
     boundary_data.plot(ax=ax, color="none", edgecolor="black")
-    boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])].plot(ax=ax, color="blue", edgecolor="black")
+
+    empty_boundaries = boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])]
+
+    if len(empty_boundaries) != 0:
+        empty_boundaries.plot(ax=ax, color="blue", edgecolor="black")
+
     geo_data.plot(ax=ax, markersize=0.5, color="red")
     check_folder("./maps/{}/{}/".format(output_name, boundary_name))
     plt.savefig("./maps/{}/{}/{}_missing.png".format(output_name, boundary_name, output_name))
@@ -62,6 +67,10 @@ def check_folder(path):
 
 
 def run(data_input, boundary_input, map_output):
+    log = logger.get_logger("boundarycode.py")
+    log.info("Boundary coding...")
+    log.info("Boundary used: {}".format(boundary_input))
+
     stripped_input = data_input.split("_")[0]
 
     try:
@@ -70,37 +79,42 @@ def run(data_input, boundary_input, map_output):
     except FileNotFoundError:
         sys.exit("Cannot find data file, exiting")
 
-    print("Data file loaded")
+    log.info("Data file loaded")
 
     try:
         boundaries = gpd.read_file("./data/boundaries/{}.shp".format(boundary_input))
     except FileNotFoundError:
         sys.exit("Cannot find boundary file, exiting")
 
-    print("Boundary file loaded")
+    log.info("Boundary file loaded")
 
     geo_data = prepare_dataset(data)
-    print("Data prepared")
+    log.info("Data prepared")
 
     boundaries = prepare_boundaries(boundaries)
-    print("Boundaries prepared")
+    log.info("Boundaries prepared")
 
-    print("Beginning merge...")
+    log.info("Number of boundaries: {}".format(len(boundaries)))
+
+    log.info("Beginning merge...")
     boundary_data = geomerge(geo_data, boundaries)
-    print("Merge completed...")
+    log.info("Merge completed...")
 
-    print("Cleaning up...")
-    geo_data, boundary_data = remove_missing(geo_data, boundary_data, boundaries)
+    log.info("Cleaning up...")
+    geo_data, boundary_data, filled, outside_uk = remove_missing(geo_data, boundary_data, boundaries)
+
+    log.info("Filled boundaries: {}".format(filled))
+    log.info("Number of locations outside UK: {}".format(outside_uk))
 
     if map_output is "Y":
-        print("Outputting maps")
+        log.info("Outputting maps")
         produce_map(geo_data, boundaries, boundary_data, boundary_input, stripped_input)
 
-    print("Writing merged dataset to file...")
+    log.info("Writing to file")
     check_folder("./results/{}/{}/".format(stripped_input, boundary_input))
+    boundary_data.drop("geometry", inplace=True, axis=1)
     boundary_data.to_csv("./results/{}/{}/{}_boundaries.csv".format(stripped_input, boundary_input, stripped_input))
-
-    print("Done.")
+    log.info("Boundary coding finished. Output saved to ./results/{}/{}/{}_boundaries.csv".format(stripped_input, boundary_input, stripped_input))
 
 
 if __name__ == "__main__":

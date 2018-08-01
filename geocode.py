@@ -1,4 +1,5 @@
 import sys
+import logger
 import pandas as pd
 import config as cfg
 from geopy.geocoders import GoogleV3
@@ -10,8 +11,6 @@ API_KEY = cfg.API_KEY
 
 
 def geolocate(data, column):
-    print("Beginning geolocator")
-
     # Setting up the geolocator to connect to Google's Geocoding API, biasing results to the UK by specifying the domain
     # timeout is to stop there being too many requests a second and making things difficult.
     geolocator = GoogleV3(api_key=API_KEY, domain="maps.google.co.uk", timeout=100)
@@ -30,8 +29,6 @@ def geolocate(data, column):
         location = geolocator.geocode(address)
 
         if location is None:
-            print("Cannot find location for {}".format(address))
-
             lat.append(None)
             lon.append(None)
 
@@ -45,8 +42,6 @@ def geolocate(data, column):
         if (count % 25) == 0:
             print("Addresses processed: {}".format(count))
 
-    print("Number of missing addresses: {}".format(missing_count))
-
     data["LAT"] = lat
     data["LON"] = lon
 
@@ -54,6 +49,9 @@ def geolocate(data, column):
 
 
 def run(input, column, columns):
+    log = logger.get_logger("geoharm.py")
+    log.info("Geocoding...")
+
     if (".xls" in input) or (".xlsx" in input):
         data = pd.read_excel("./data/{}".format(input))
 
@@ -63,6 +61,8 @@ def run(input, column, columns):
     else:
         sys.exit("Cannot determine the filetype of input, is it .csv, .xls or .xlsx?")
 
+    log.info("Dataset size: {}".format(len(data)))
+
     if columns is "":
         with open("./data/{}.txt".format(columns), "r") as myfile:
             columns = [line.split(", ") for line in myfile.readlines()][0]
@@ -71,6 +71,8 @@ def run(input, column, columns):
 
     output, missing = geolocate(data, column)
 
+    log.info("Number of missing geolocations: {}".format(len(missing)))
+
     input = input.split(".")[0]
 
     output.to_csv("./results/{}/{}_geo.csv".format(input, input))
@@ -78,7 +80,7 @@ def run(input, column, columns):
     with open('./results/{}/{}_missing.txt'.format(input, input), mode='wt', encoding='utf-8') as myfile:
         myfile.write('\n'.join(missing))
 
-    print("Geolocating finished. Output saved to ./results/{}/".format(input))
+    log.info("Geolocating finished. Output saved to ./results/{}/".format(input))
 
 
 if __name__ == "__main__":

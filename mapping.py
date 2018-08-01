@@ -1,13 +1,12 @@
 import sys
 import folium
+import logger
 import numpy as np
 import pandas as pd
 from folium.plugins import MarkerCluster
 
 
 def create_map(data, output, name=None):
-    print("Beginning mapping...")
-
     map_osm = folium.Map()
 
     marker_cluster = MarkerCluster().add_to(map_osm)
@@ -25,6 +24,9 @@ def create_map(data, output, name=None):
 
 
 def run(input, name):
+    log = logger.get_logger("mapping.py")
+    log.info("Mapping...")
+
     stripped_input = input.split("_")[0]
 
     try:
@@ -32,9 +34,10 @@ def run(input, name):
     except FileNotFoundError:
         sys.exit("Cannot find data file, exiting")
 
+    log.info("Creating map...")
     create_map(data, stripped_input, name)
 
-    print("Mapping finished. Output saved to ./maps/{}/".format(stripped_input))
+    log.info("Mapping finished. Output saved to ./maps/{}/".format(stripped_input))
 
 
 if __name__ == "__main__":
