@@ -48,7 +48,12 @@ def produce_map(geo_data, boundaries, boundary_data, boundary_name, output_name)
     ax.set_aspect("equal")
 
     boundary_data.plot(ax=ax, color="none", edgecolor="black")
-    boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])].plot(ax=ax, color="blue", edgecolor="black")
+
+    empty_boundaries = boundaries[~boundaries["geo_code"].isin(boundary_data["geo_code"])]
+
+    if len(empty_boundaries) != 0:
+        empty_boundaries.plot(ax=ax, color="blue", edgecolor="black")
+
     geo_data.plot(ax=ax, markersize=0.5, color="red")
     check_folder("./maps/{}/{}/".format(output_name, boundary_name))
     plt.savefig("./maps/{}/{}/{}_missing.png".format(output_name, boundary_name, output_name))
@@ -105,7 +110,9 @@ def run(data_input, boundary_input, map_output):
         log.info("Outputting maps")
         produce_map(geo_data, boundaries, boundary_data, boundary_input, stripped_input)
 
+    log.info("Writing to file")
     check_folder("./results/{}/{}/".format(stripped_input, boundary_input))
+    boundary_data.drop("geometry", inplace=True, axis=1)
     boundary_data.to_csv("./results/{}/{}/{}_boundaries.csv".format(stripped_input, boundary_input, stripped_input))
     log.info("Boundary coding finished. Output saved to ./results/{}/{}/{}_boundaries.csv".format(stripped_input, boundary_input, stripped_input))
 
